@@ -12,17 +12,29 @@ import (
 
 func main() {
 	// Инициализация
-	repo := repository.NewInMemoryDB()
-	accountUsecase := usecase.NewAccountUsecase(repo)
+	accountRepo := repository.NewInMemoryDB()
+	accountUsecase := usecase.NewAccountUsecase(accountRepo)
 	accountHandler := handlers.NewAccountHandler(accountUsecase)
+
+	contactRepo := repository.NewContacts()
+	contactUsecase := usecase.NewContactUsecase(contactRepo)
+	contactHandler := handlers.NewContactHandler(contactUsecase)
 
 	r := mux.NewRouter()
 
 	// Определение маршрутов
+
+	// аккаунт
 	r.HandleFunc("/accounts", accountHandler.GetAccounts).Methods("GET")
 	r.HandleFunc("/account/create", accountHandler.CreateAccount).Methods("POST")
+
+	// интеграции
 	r.HandleFunc("/integrations", accountHandler.GetAccountIntegrations).Methods("GET")
 	r.HandleFunc("/integration/create", accountHandler.CreateAccountIntegration).Methods("POST")
+
+	// редирект
+	r.HandleFunc("/redirect", handlers.RedirectHandler).Methods("GET")
+	r.HandleFunc("/contacts", contactHandler.GetContacts).Methods("GET")
 
 	// Запуск сервера
 	log.Println("Сервер запущен на http://localhost:8080")
