@@ -20,19 +20,9 @@ type Contacts struct {
 }
 
 type ApiResponse struct {
-	Page     int `json:"_page"`
 	Embedded struct {
-		Contacts []entities.Contact `json:"contacts"`
+		Contacts []entities.ResponseContact `json:"contacts"`
 	} `json:"_embedded"`
-}
-
-type CustomField struct {
-	FieldCode string       `json:"field_code"`
-	Values    []FieldValue `json:"values"`
-}
-
-type FieldValue struct {
-	Value string `json:"value"`
 }
 
 func NewContacts() *Contacts {
@@ -42,7 +32,6 @@ func NewContacts() *Contacts {
 }
 
 func (c *Contacts) GetContacts(token string, subdomain string) ([]entities.Contact, error) {
-	// Формируем URL API
 	url := fmt.Sprintf("https://%s.amocrm.ru/api/v4/contacts", subdomain)
 
 	// Создаём HTTP-запрос
@@ -67,21 +56,26 @@ func (c *Contacts) GetContacts(token string, subdomain string) ([]entities.Conta
 		return nil, fmt.Errorf("Ошибка чтения контактов: %s", resp.Status)
 	}
 
+	// Читаем тело ответа
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Ошибка чтения тела ответа:", err)
 		return nil, err
 	}
 
-	// Вывод тела ответа как строки
-	fmt.Println("Тело ответа:")
-	fmt.Println(string(body))
-
 	var apiResponse ApiResponse
 	err = json.Unmarshal(body, &apiResponse)
+
 	if err != nil {
 		log.Fatalf("Ошибка парсинга JSON: %v", err)
 	}
 
-	return apiResponse.Embedded.Contacts, nil
+	response := make([]entities.Contact, 0)
+
+	for _, contact := range apiResponse.Embedded.Contacts {
+		newContact := entities.NewContact(contact)
+		response = append(response, newContact)
+	}
+
+	return response, nil
 }
