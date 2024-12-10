@@ -22,10 +22,15 @@ type FieldValue struct {
 }
 
 func NewContact(rc ResponseContact) Contact {
-	phone := rc.CustomFieldValues[0].Values[0].Value
+	phone := ""
 	email := ""
-	if len(rc.CustomFieldValues) == 2 {
-		email = rc.CustomFieldValues[1].Values[0].Value
+
+	for _, field := range rc.CustomFieldValues {
+		if field.FieldCode == "PHONE" {
+			phone = field.Values[0].Value
+		} else if field.FieldCode == "EMAIL" {
+			email = field.Values[0].Value
+		}
 	}
 
 	return Contact{
