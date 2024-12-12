@@ -1,9 +1,14 @@
 package entities
 
+import "github.com/google/uuid"
+
 type Contact struct {
-	Name  string `json:"name"`
-	Phone string `json:"phone"`
-	Email string `json:"email"`
+	ID       string  `json:"-" gorm:"primary_key"`
+	ClientID string  `json:"-" gorm:"not null;size:191"`
+	Account  Account `gorm:"foreignkey:ClientID;constraint:OnDelete:CASCADE;" json:"-"` // Внешний ключ
+	Name     string  `json:"name" gorm:"not null"`
+	Phone    string  `json:"phone"`
+	Email    string  `json:"email" gorm:"not null; unique"`
 }
 
 type ResponseContact struct {
@@ -21,7 +26,7 @@ type FieldValue struct {
 	Value string `json:"value"`
 }
 
-func NewContact(rc ResponseContact) Contact {
+func NewContact(rc ResponseContact, accountID string) Contact {
 	phone := ""
 	email := ""
 
@@ -34,8 +39,10 @@ func NewContact(rc ResponseContact) Contact {
 	}
 
 	return Contact{
-		Name:  rc.Name,
-		Phone: phone,
-		Email: email,
+		ID:       uuid.NewString(),
+		ClientID: accountID,
+		Name:     rc.Name,
+		Phone:    phone,
+		Email:    email,
 	}
 }

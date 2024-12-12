@@ -2,7 +2,8 @@ package repository
 
 import (
 	"myAwesomeProject/internal/entities"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
 type AccountRepository interface {
@@ -12,56 +13,52 @@ type AccountRepository interface {
 	GetIntegrations() ([]entities.AccountIntegration, error)
 }
 
-type InMemoryDB struct {
-	mu                 sync.RWMutex
-	accounts           map[string]entities.Account
-	accountIntegration map[string]entities.AccountIntegration
+type AccountStorage struct {
+	db *gorm.DB
 }
 
-func NewInMemoryDB() *InMemoryDB {
-	return &InMemoryDB{
-		accounts:           make(map[string]entities.Account),
-		accountIntegration: make(map[string]entities.AccountIntegration),
+func NewAccountStorage(db *gorm.DB) *AccountStorage {
+	return &AccountStorage{
+		db: db,
 	}
 }
 
-func (db *InMemoryDB) AddAccount(account entities.Account) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+func (as *AccountStorage) AddAccount(account entities.Account) error {
 	newAccount := entities.NewAccount(account.AccessToken, account.RefreshToken, account.Expires)
-	db.accounts[account.AccountID] = newAccount
-
-	return nil
-}
-
-func (db *InMemoryDB) AddIntegration(accountIntegration entities.AccountIntegration) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	newIntegration := entities.NewIntegration(accountIntegration.SecretKey, accountIntegration.RedirectURL, accountIntegration.AuthenticationCode)
-	db.accountIntegration[accountIntegration.ClientID] = newIntegration
-
-	return nil
-}
-
-func (db *InMemoryDB) GetAccounts() ([]entities.Account, error) {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
-
-	accounts := make([]entities.Account, 0)
-	for _, account := range db.accounts {
-		accounts = append(accounts, account)
+	result := as.db.Create(&newAccount)
+	if result.Error != nil {
+		return result.Error
 	}
+
+	return nil
+}
+
+func (as *AccountStorage) AddIntegration(accountIntegration entities.AccountIntegration) error {
+	newIntegration := entities.NewIntegration(accountIntegration.SecretKey, accountIntegration.RedirectURL, accountIntegration.AuthenticationCode)
+	result := as.db.Create(&newIntegration)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (as *AccountStorage) GetAccounts() ([]entities.Account, error) {
+	accounts := make([]entities.Account, 0)
+	result := as.db.Find(&accounts)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
 	return accounts, nil
 }
 
-func (db *InMemoryDB) GetIntegrations() ([]entities.AccountIntegration, error) {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
-
-	accountIntegrations := make([]entities.AccountIntegration, 0)
-	for _, accountIntegration := range db.accountIntegration {
-		accountIntegrations = append(accountIntegrations, accountIntegration)
+func (as *AccountStorage) GetIntegrations() ([]entities.AccountIntegration, error) {
+	integrations := make([]entities.AccountIntegration, 0)
+	result := as.db.Find(&integrations)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
-	return accountIntegrations, nil
+	return integrations, nil
 }

@@ -7,16 +7,16 @@ import (
 	"log"
 	"myAwesomeProject/internal/entities"
 	"net/http"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
 type ContactRepository interface {
 	GetContacts(string, string) ([]entities.Contact, error)
 }
 
-type Contacts struct {
-	mu       sync.RWMutex
-	contacts []entities.Contact
+type ContactStorage struct {
+	db *gorm.DB
 }
 
 type ApiResponse struct {
@@ -25,13 +25,13 @@ type ApiResponse struct {
 	} `json:"_embedded"`
 }
 
-func NewContacts() *Contacts {
-	return &Contacts{
-		contacts: make([]entities.Contact, 0),
+func NewContactStorage(db *gorm.DB) *ContactStorage {
+	return &ContactStorage{
+		db: db,
 	}
 }
 
-func (c *Contacts) GetContacts(token string, subdomain string) ([]entities.Contact, error) {
+func (cs *ContactStorage) GetContacts(token string, subdomain string) ([]entities.Contact, error) {
 	url := fmt.Sprintf("https://%s.amocrm.ru/api/v4/contacts", subdomain)
 
 	// Создаём HTTP-запрос
@@ -70,11 +70,22 @@ func (c *Contacts) GetContacts(token string, subdomain string) ([]entities.Conta
 		log.Fatalf("Ошибка парсинга JSON: %v", err)
 	}
 
+	var account entities.Account
+	result := cs.db.Where("access+token = ?", token).First(account)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
 	response := make([]entities.Contact, 0)
 
 	for _, contact := range apiResponse.Embedded.Contacts {
-		newContact := entities.NewContact(contact)
+		newContact := entities.NewContact(contact, account.AccountID)
 		response = append(response, newContact)
+	}
+
+	result = cs.db.Create(&response)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
 	return response, nil

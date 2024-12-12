@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"myAwesomeProject/internal/usecase"
 	"net/http"
 )
@@ -36,6 +37,7 @@ func (h *ContactHandler) GetContacts(w http.ResponseWriter, r *http.Request) {
 	subdomain := "emdzaharovtest"
 
 	contacts, err := h.contactUsecase.GetContacts(token, subdomain)
+	fmt.Println(err)
 	if err != nil {
 		http.Error(w, "Не удалось получить контакты", http.StatusBadRequest)
 		return

@@ -3,9 +3,9 @@ package entities
 import "github.com/google/uuid"
 
 type Account struct {
-	AccountID    string `json:"account_id"`
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccountID    string `json:"account_id" gorm:"primary_key"`
+	AccessToken  string `json:"access_token" gorm:"not null"`
+	RefreshToken string `json:"refresh_token" gorm:"not null"`
 	Expires      int    `json:"expires"`
 }
 
