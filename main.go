@@ -16,6 +16,8 @@ func main() {
 	// Инициализация
 	db := Connect()
 
+	log.Println("Подключена база данных!")
+
 	accountRepo := repository.NewAccountStorage(db)
 	accountUsecase := usecase.NewAccountUsecase(accountRepo)
 	accountHandler := handlers.NewAccountHandler(accountUsecase)
@@ -24,11 +26,16 @@ func main() {
 	contactUsecase := usecase.NewContactUsecase(contactRepo)
 	contactHandler := handlers.NewContactHandler(contactUsecase)
 
+	uniRepo := repository.NewUnisenderStorage(db)
+	uniUsecase := usecase.NewUnisenderUsecase(uniRepo)
+	uniHandler := handlers.NewUnisenderHandler(uniUsecase)
+
 	// Настройка миграций
 	migrationsList := []*gormigrate.Migration{
 		migrations.CreateAccountMigration(),
 		migrations.CreateIntegrationMigration(),
 		migrations.CreateContactMigration(),
+		migrations.CreateUnisenderMigration(),
 	}
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, migrationsList)
@@ -44,6 +51,7 @@ func main() {
 
 	// Определение маршрутов
 
+	r.HandleFunc("/", uniHandler.SaveUnisenderKey).Methods("GET", "POST")
 	// аккаунт
 	r.HandleFunc("/accounts", accountHandler.GetAccounts).Methods("GET")
 	r.HandleFunc("/account/create", accountHandler.CreateAccount).Methods("POST")
@@ -53,8 +61,9 @@ func main() {
 	r.HandleFunc("/integration/create", accountHandler.CreateAccountIntegration).Methods("POST")
 
 	// редирект
-	r.HandleFunc("/redirect", handlers.RedirectHandler).Methods("GET")
 	r.HandleFunc("/contacts", contactHandler.GetContacts).Methods("GET")
+
+	log.Println("Роутер успешно настроен!")
 
 	// Запуск сервера
 	log.Println("Сервер запущен на http://localhost:8080")
