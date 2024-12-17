@@ -24,9 +24,5 @@ func (us *UnisenderStorage) SaveUnisenderKey(key string, accountID string) error
 	newUnisenderKey := entities.NewUnisender(key, accountID)
 	result := us.db.Create(&newUnisenderKey)
 
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
+	return result.Error
 }

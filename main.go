@@ -2,11 +2,18 @@ package main
 
 import (
 	"log"
+	"net"
+
+	grpcserver "myAwesomeProject/internal/grpc"
 	"myAwesomeProject/internal/handlers"
 	"myAwesomeProject/internal/repository"
 	"myAwesomeProject/internal/usecase"
 	"myAwesomeProject/migrations"
+	pb "myAwesomeProject/proto/accountpb"
 	"net/http"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/go-gormigrate/gormigrate/v2"
 	"github.com/gorilla/mux"
@@ -64,6 +71,29 @@ func main() {
 	r.HandleFunc("/contacts", contactHandler.GetContacts).Methods("GET")
 
 	log.Println("Роутер успешно настроен!")
+
+	go func() {
+		grpcPort := ":8081"
+		grpcServer := grpc.NewServer()
+
+		accountServer := grpcserver.NewAccountServer(accountUsecase)
+		pb.RegisterAccountServiceServer(grpcServer, accountServer)
+		grpc.NewServer()
+
+		lis, err := net.Listen("tcp", grpcPort)
+		if err != nil {
+			log.Fatalf("Ошибка слушателя: %v", err)
+		}
+
+		reflection.Register(grpcServer)
+
+		log.Printf("gRPC сервер слушает на порту %s", grpcPort)
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Ошибка запуска: %v", err)
+		}
+
+		log.Println("gRPC запущен на http://localhost:8081")
+	}()
 
 	// Запуск сервера
 	log.Println("Сервер запущен на http://localhost:8080")

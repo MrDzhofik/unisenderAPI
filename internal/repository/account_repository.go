@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"myAwesomeProject/internal/entities"
 
 	"gorm.io/gorm"
@@ -11,6 +12,7 @@ type AccountRepository interface {
 	GetAccounts() ([]entities.Account, error)
 	AddIntegration(integration entities.AccountIntegration) error
 	GetIntegrations() ([]entities.AccountIntegration, error)
+	DeleteAccountByID(string) error
 }
 
 type AccountStorage struct {
@@ -26,39 +28,35 @@ func NewAccountStorage(db *gorm.DB) *AccountStorage {
 func (as *AccountStorage) AddAccount(account entities.Account) error {
 	newAccount := entities.NewAccount(account.AccessToken, account.RefreshToken, account.Expires)
 	result := as.db.Create(&newAccount)
-	if result.Error != nil {
-		return result.Error
-	}
 
-	return nil
+	return result.Error
 }
 
 func (as *AccountStorage) AddIntegration(accountIntegration entities.AccountIntegration) error {
 	newIntegration := entities.NewIntegration(accountIntegration.SecretKey, accountIntegration.RedirectURL, accountIntegration.AuthenticationCode)
 	result := as.db.Create(&newIntegration)
-	if result.Error != nil {
-		return result.Error
-	}
 
-	return nil
+	return result.Error
 }
 
 func (as *AccountStorage) GetAccounts() ([]entities.Account, error) {
 	accounts := make([]entities.Account, 0)
 	result := as.db.Find(&accounts)
-	if result.Error != nil {
-		return nil, result.Error
-	}
 
-	return accounts, nil
+	return accounts, result.Error
 }
 
 func (as *AccountStorage) GetIntegrations() ([]entities.AccountIntegration, error) {
 	integrations := make([]entities.AccountIntegration, 0)
 	result := as.db.Find(&integrations)
-	if result.Error != nil {
-		return nil, result.Error
-	}
 
-	return integrations, nil
+	return integrations, result.Error
+}
+
+func (as *AccountStorage) DeleteAccountByID(accountID string) error {
+	result := as.db.Delete(&entities.Account{}, "account_id = ?", accountID)
+	if result.RowsAffected == 0 {
+		return errors.New("аккаунт с таким ID не найден")
+	}
+	return result.Error
 }
