@@ -6,12 +6,14 @@ import (
 
 	grpcserver "myAwesomeProject/internal/grpc"
 	"myAwesomeProject/internal/handlers"
+	"myAwesomeProject/internal/producer"
 	"myAwesomeProject/internal/repository"
 	"myAwesomeProject/internal/usecase"
 	"myAwesomeProject/migrations"
 	pb "myAwesomeProject/proto/accountpb"
 	"net/http"
 
+	"github.com/kr/beanstalk"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -21,9 +23,19 @@ import (
 
 func main() {
 	// Инициализация
+	// Базы данных
 	db := Connect()
 
 	log.Println("Подключена база данных!")
+
+	// Сервера очереди сообщений
+	conn, err := beanstalk.Dial("tcp", "localhost:11300")
+	if err != nil {
+		log.Fatalf("Ошибка подключения к Beanstalk: %v", err)
+	}
+	defer conn.Close()
+
+	log.Println("Подключено к серверу очереди сообщений!")
 
 	accountRepo := repository.NewAccountStorage(db)
 	accountUsecase := usecase.NewAccountUsecase(accountRepo)
@@ -33,9 +45,10 @@ func main() {
 	contactUsecase := usecase.NewContactUsecase(contactRepo)
 	contactHandler := handlers.NewContactHandler(contactUsecase)
 
+	uniProducer := producer.NewContactSyncProducer(conn)
 	uniRepo := repository.NewUnisenderStorage(db)
 	uniUsecase := usecase.NewUnisenderUsecase(uniRepo)
-	uniHandler := handlers.NewUnisenderHandler(uniUsecase)
+	uniHandler := handlers.NewUnisenderHandler(uniUsecase, uniProducer)
 
 	// Настройка миграций
 	migrationsList := []*gormigrate.Migration{
