@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"myAwesomeProject/internal/worker"
 	"net"
+	"os"
 
 	grpcserver "myAwesomeProject/internal/grpc"
 	"myAwesomeProject/internal/handlers"
@@ -14,6 +16,7 @@ import (
 	"net/http"
 
 	"github.com/kr/beanstalk"
+	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -90,6 +93,7 @@ func main() {
 
 	log.Println("Роутер успешно настроен!")
 
+	// gRPC сервер
 	go func() {
 		grpcPort := ":8081"
 		grpcServer := grpc.NewServer()
@@ -117,5 +121,22 @@ func main() {
 	log.Println("Сервер запущен на http://localhost:8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
+	}
+
+	// Создание и запуск CLI-приложения
+	app := &cli.App{
+		Name:  "worker-cli",
+		Usage: "CLI для запуска обработчика задач Beanstalk",
+		Commands: []*cli.Command{
+			{
+				Name:   "run-worker",
+				Usage:  "Запускает обработку задач для синхронизации контактов",
+				Action: worker.RunWorker,
+			},
+		},
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
 	}
 }

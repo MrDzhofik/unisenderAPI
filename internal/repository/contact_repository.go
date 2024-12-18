@@ -94,13 +94,22 @@ func (cs *ContactStorage) GetContacts(token string, subdomain string) ([]entitie
 }
 
 func (cs *ContactStorage) AddContact(contact entities.Contact) error {
-	return nil
-}
+	result := cs.db.Create(&contact)
 
-func (cs *ContactStorage) DeleteContact(contactID string) error {
-	return nil
+	return result.Error
 }
 
 func (cs *ContactStorage) UpdateContact(contact entities.Contact) error {
-	return nil
+	result := cs.db.Model(&entities.Contact{}).Where("id = ?", contact.ID).Updates(contact)
+
+	return result.Error
+}
+
+func (cs *ContactStorage) DeleteContact(contactID string) error {
+	contact := entities.Contact{
+		ID: contactID,
+	}
+	result := cs.db.Where("id = ?", contactID).Delete(&contact)
+
+	return result.Error
 }

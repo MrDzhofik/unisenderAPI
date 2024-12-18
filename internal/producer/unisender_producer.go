@@ -22,7 +22,7 @@ func NewContactSyncProducer(conn *beanstalk.Conn) *ContactSyncProducer {
 func (p *ContactSyncProducer) AddContactTask(task entities.ContactTask) (uint64, error) {
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
-		return 0, fmt.Errorf("failed to marshal task: %w", err)
+		return 0, fmt.Errorf("ошибка преобразования задачи: %w", err)
 	}
 
 	id, err := p.beanstalkConn.Put(taskBytes, 1, 0, 120)
