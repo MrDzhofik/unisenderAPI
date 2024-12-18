@@ -50,6 +50,8 @@ func main() {
 	uniUsecase := usecase.NewUnisenderUsecase(uniRepo)
 	uniHandler := handlers.NewUnisenderHandler(uniUsecase, uniProducer)
 
+	webHookHandler := handlers.NewWebHookHandler(uniProducer)
+
 	// Настройка миграций
 	migrationsList := []*gormigrate.Migration{
 		migrations.CreateAccountMigration(),
@@ -82,6 +84,9 @@ func main() {
 
 	// редирект
 	r.HandleFunc("/contacts", contactHandler.GetContacts).Methods("GET")
+
+	// WebHook
+	r.HandleFunc("/webhook", webHookHandler.HookHandler).Methods("POST")
 
 	log.Println("Роутер успешно настроен!")
 

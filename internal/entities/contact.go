@@ -12,8 +12,9 @@ type Contact struct {
 }
 
 type ResponseContact struct {
-	ID                int           `json:"id"`
+	ID                string        `json:"id"`
 	Name              string        `json:"name"`
+	AccountID         string        `json:"account_id"`
 	CustomFieldValues []CustomField `json:"custom_fields_values"`
 }
 

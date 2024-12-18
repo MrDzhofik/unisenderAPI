@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"myAwesomeProject/internal/entities"
 	"myAwesomeProject/internal/producer"
 	"myAwesomeProject/internal/usecase"
 	"net/http"
@@ -32,7 +33,7 @@ func (uh *UnisenderHandler) SaveUnisenderKey(w http.ResponseWriter, r *http.Requ
 	unisenderKey := r.FormValue("unisender_key")
 	accountID := r.FormValue("account_id")
 
-	err := uh.producer.AddSyncTask(accountID)
+	_, err := uh.producer.AddContactTask(entities.ContactTask{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Ошибка добавления задачи: %v", err), http.StatusInternalServerError)
 		return

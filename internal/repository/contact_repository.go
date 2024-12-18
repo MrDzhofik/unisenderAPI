@@ -13,6 +13,9 @@ import (
 
 type ContactRepository interface {
 	GetContacts(string, string) ([]entities.Contact, error)
+	AddContact(entities.Contact) error
+	UpdateContact(entities.Contact) error
+	DeleteContact(string) error
 }
 
 type ContactStorage struct {
@@ -53,13 +56,12 @@ func (cs *ContactStorage) GetContacts(token string, subdomain string) ([]entitie
 
 	// Проверяем статус-код ответа
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Ошибка чтения контактов: %s", resp.Status)
+		return nil, fmt.Errorf("ошибка чтения контактов: %s", resp.Status)
 	}
 
 	// Читаем тело ответа
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Ошибка чтения тела ответа:", err)
 		return nil, err
 	}
 
@@ -89,4 +91,16 @@ func (cs *ContactStorage) GetContacts(token string, subdomain string) ([]entitie
 	}
 
 	return response, nil
+}
+
+func (cs *ContactStorage) AddContact(contact entities.Contact) error {
+	return nil
+}
+
+func (cs *ContactStorage) DeleteContact(contactID string) error {
+	return nil
+}
+
+func (cs *ContactStorage) UpdateContact(contact entities.Contact) error {
+	return nil
 }
