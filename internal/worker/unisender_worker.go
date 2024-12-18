@@ -2,13 +2,11 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"myAwesomeProject/internal/entities"
 	"myAwesomeProject/internal/usecase"
 
 	"github.com/kr/beanstalk"
-	"github.com/urfave/cli/v2"
 )
 
 type Worker struct {
@@ -16,12 +14,15 @@ type Worker struct {
 	contactUsecase usecase.ContactUsecase
 }
 
-func NewWorker(conn *beanstalk.Conn, tubeName string) *Worker {
+func NewWorker(conn *beanstalk.Conn, tubeName string, contactUsecase usecase.ContactUsecase) *Worker {
 	tube := &beanstalk.Tube{
 		Conn: conn,
 		Name: tubeName,
 	}
-	return &Worker{tube: tube}
+	return &Worker{
+		tube:           tube,
+		contactUsecase: contactUsecase,
+	}
 }
 
 func (w *Worker) ProcessTask() {
@@ -47,8 +48,6 @@ func (w *Worker) ProcessTask() {
 }
 
 func (w *Worker) handleTask(body []byte) error {
-	fmt.Printf("Получена задача: %s\n", body)
-
 	var task entities.ContactTask
 	err := json.Unmarshal(body, &task)
 	if err != nil {
@@ -74,18 +73,4 @@ func (w *Worker) handleTask(body []byte) error {
 	}
 
 	return err
-}
-
-func RunWorker(c *cli.Context) error {
-	conn, err := beanstalk.Dial("tcp", "localhost:11300")
-	if err != nil {
-		log.Fatalf("Ошибка подключения к Beanstalk серверу: %v", err)
-	}
-	defer conn.Close()
-
-	worker := NewWorker(conn, "contact_sync_queue")
-
-	worker.ProcessTask()
-
-	return nil
 }

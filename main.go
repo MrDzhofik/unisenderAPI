@@ -2,32 +2,31 @@ package main
 
 import (
 	"log"
-	"myAwesomeProject/internal/worker"
-	"net"
-	"os"
-
+	db2 "myAwesomeProject/db"
 	grpcserver "myAwesomeProject/internal/grpc"
 	"myAwesomeProject/internal/handlers"
 	"myAwesomeProject/internal/producer"
 	"myAwesomeProject/internal/repository"
 	"myAwesomeProject/internal/usecase"
+	"myAwesomeProject/internal/worker"
 	"myAwesomeProject/migrations"
 	pb "myAwesomeProject/proto/accountpb"
+	"net"
 	"net/http"
+	"os"
 
+	"github.com/go-gormigrate/gormigrate/v2"
+	"github.com/gorilla/mux"
 	"github.com/kr/beanstalk"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	"github.com/go-gormigrate/gormigrate/v2"
-	"github.com/gorilla/mux"
 )
 
 func main() {
 	// Инициализация
 	// Базы данных
-	db := Connect()
+	db := db2.Connect()
 
 	log.Println("Подключена база данных!")
 
@@ -70,6 +69,37 @@ func main() {
 	}
 
 	log.Println("Миграции успешно применены!")
+
+	// Создание и запуск CLI-приложения
+	app := &cli.App{
+		Name:  "worker-cli",
+		Usage: "CLI для запуска обработчика задач Beanstalk",
+		Commands: []*cli.Command{
+			{
+				Name:  "run-worker",
+				Usage: "Запускает обработку задач для синхронизации контактов",
+				Action: func(c *cli.Context) error {
+					conn, err := beanstalk.Dial("tcp", "localhost:11300")
+					if err != nil {
+						log.Fatalf("Ошибка подключения к Beanstalk серверу: %v", err)
+					}
+					defer conn.Close()
+
+					worker := worker.NewWorker(conn, "default", contactUsecase)
+					worker.ProcessTask()
+
+					return nil
+				},
+			},
+		},
+	}
+
+	if len(os.Args) > 1 {
+		if err := app.Run(os.Args); err != nil {
+			log.Fatalf("Ошибка CLI: %v", err)
+		}
+		return
+	}
 
 	// Настройка роутера
 	r := mux.NewRouter()
@@ -121,22 +151,5 @@ func main() {
 	log.Println("Сервер запущен на http://localhost:8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
-	}
-
-	// Создание и запуск CLI-приложения
-	app := &cli.App{
-		Name:  "worker-cli",
-		Usage: "CLI для запуска обработчика задач Beanstalk",
-		Commands: []*cli.Command{
-			{
-				Name:   "run-worker",
-				Usage:  "Запускает обработку задач для синхронизации контактов",
-				Action: worker.RunWorker,
-			},
-		},
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
 	}
 }
