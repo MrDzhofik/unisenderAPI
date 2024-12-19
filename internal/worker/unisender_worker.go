@@ -1,4 +1,4 @@
-package main
+package worker
 
 import (
 	"encoding/json"
@@ -19,10 +19,12 @@ func NewWorker(conn *beanstalk.Conn, tubeName string, contactUsecase usecase.Con
 		Conn: conn,
 		Name: tubeName,
 	}
-	return &Worker{
+
+	worker := &Worker{
 		tube:           tube,
 		contactUsecase: contactUsecase,
 	}
+	return worker
 }
 
 func (w *Worker) ProcessTask() {
