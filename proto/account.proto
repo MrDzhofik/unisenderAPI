@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "proto/accountpb";
+
+service AccountService {
+  rpc DeleteAccountByID (DeleteAccountRequest) returns (DeleteAccountResponse);
+}
+
+message DeleteAccountRequest {
+  string account_id = 1;
+}
+
+message DeleteAccountResponse {
+  string message = 1;
+  bool success = 2;
+}
